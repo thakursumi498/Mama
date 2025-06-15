@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GynConnect - Video Consultations with Indian Gynecologists</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+    :root {
+        --primary-color: #ce1212;
+        --secondary-color: #ffffff;
+        --text-color: #333333;
+        --shadow-color: rgba(206, 18, 18, 0.2);
+        --accent-color: #f8d7da;
+        --meet-bg-color: #202124;
+        --meet-text-color: #080808;
+        --meet-accent-color: #8ab4f8;
+        --chat-bg-color: #dcf8c6;
+        --chat-sent-bg: #e1ffc7;
+        --chat-received-bg: #ffffff;
+    }
+
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        font-family: 'Poppins', sans-serif;
+        background-color: var(--secondary-color);
+        color: var(--text-color);
+        line-height: 1.6;
+    }
+
+    header {
+        background-color: var(--primary-color);
+        color: var(--secondary-color);
+        text-align: center;
+        padding: 2rem;
+        box-shadow: 0 4px 6px var(--shadow-color);
+    }
+
+    h1 {
+        margin: 0;
+        font-size: 2.5rem;
+        letter-spacing: 2px;
+        font-weight: 700;
+    }
+
+    header p {
+        margin-top: 0.5rem;
+        font-size: 1.2rem;
+        font-weight: 300;
+    }
+
+    main {
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 0 2rem;
+    }
+
+    #gynecologist-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 2rem;
+    }
+
+    .gynecologist-card {
+        background-color: var(--secondary-color);
+        border-radius: 12px;
+        box-shadow: 0 4px 6px var(--shadow-color);
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        position: relative;
+    }
+
+    .gynecologist-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 12px var(--shadow-color);
+    }
+
+    .gynecologist-card img {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-bottom: 1rem;
+        border: 3px solid var(--primary-color);
+        transition: transform 0.3s ease;
+    }
+
+    .gynecologist-card:hover img {
+        transform: scale(1.05);
+    }
+
+    .gynecologist-card h3 {
+        margin: 0.5rem 0;
+        color: var(--primary-color);
+        font-weight: 600;
+    }
+
+    .gynecologist-card p {
+        margin: 0.25rem 0;
+        font-weight: 300;
+    }
+
+    .gynecologist-card button {
+        background-color: var(--primary-color);
+        color: var(--secondary-color);
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 25px;
+        cursor: pointer;
+        margin-top: 1rem;
+        font-weight: 500;
+        transition: background-color 0.3s ease, transform 0.3s ease;
+    }
+
+    .gynecologist-card button:hover {
+        background-color: #a80f0f;
+        transform: scale(1.05);
+    }
+
+    .status-indicator {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+    }
+
+    .status-online {
+        background-color: #28a745;
+    }
+
+    .status-offline {
+        background-color: #dc3545;
+    }
+
+    #video-conference {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: var(--meet-bg-color);
+        color: var(--meet-text-color);
+        z-index: 1000;
+        font-family: 'Poppins', sans-serif;
+    }
+
+    #video-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1rem;
+        padding: 1rem;
+        height: calc(100% - 80px);
+        overflow-y: auto;
+    }
+
+    .video-container {
+        position: relative;
+        width: 100%;
+        padding-bottom: 56.25%; /* 16:9 aspect ratio */
+        background-color: #3c4043;
+        border-radius: 8px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .video-container:hover {
+        box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+        transform: scale(1.02);
+    }
+
+    .video-container video {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .video-container::after {
+        content: attr(data-user-name);
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        background-color: rgba(0, 0, 0, 0.5);
+        color: white;
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    #video-controls {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 1rem;
+        background-color: rgba(32, 33, 36, 0.8);
+        backdrop-filter: blur(10px);
+    }
+
+    .control-button {
+        background-color: #3c4043;
+        color: var(--meet-text-color);
+        border: none;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        margin: 0 0.5rem;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transition: all 0.3s ease;
+        font-size: 20px;
+    }
+
+    .control-button:hover {
+        background-color: #5f6368;
+        transform: scale(1.1);
+    }
+
+    #end-call {
+        background-color: #ea4335;
+    }
+
+    #end-call:hover {
+        background-color: #d93025;
+    }
+
+    .participants-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    .participant {
+        text-align: center;
+        font-size: 12px;
+        font-weight: 300;
+    }
+
+    .participant-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        margin-bottom: 5px;
+        background-color: var(--meet-accent-color);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: 600;
+        color: var(--meet-bg-color);
+    }
+
+    #chat-panel {
+        position: fixed;
+        right: -100%;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: var(--chat-bg-color);
+        transition: right 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        z-index: 1001;
+    }
+
+    #chat-panel.open {
+        right: 0;
+    }
+
+    #chat-header {
+        background-color: var(--primary-color);
+        color: var(--secondary-color);
+        padding: 1rem;
+        font-weight: 600;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    #chat-close, #end-chat {
+        background: none;
+        border: none;
+        color: var(--secondary-color);
+        font-size: 1.5rem;
+        cursor: pointer;
+    }
+
+    #chat-messages {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+    }
+
+    #chat-input {
+        display: flex;
+        padding: 1rem;
+        background-color: var(--secondary-color);
+    }
+
+    #chat-input input {
+        flex-grow: 1;
+        padding: 0.5rem;
+        border: none;
+        border-radius: 20px;
+        background-color: #f0f0f0;
+    }
+
+    #chat-input button {
+        background-color: var(--primary-color);
+        color: var(--secondary-color);
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        margin-left: 0.5rem;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 20px;
+    }
+
+    .chat-message {
+        max-width: 80%;
+        padding: 8px 12px;
+        border-radius: 18px;
+        margin-bottom: 8px;
+        position: relative;
+        word-wrap: break-word;
+    }
+
+    .chat-message.sent {
+        background-color: var(--chat-sent-bg);
+        align-self: flex-end;
+        border-bottom-right-radius: 0;
+    }
+
+    .chat-message.received {
+        background-color: var(--chat-received-bg);
+        align-self: flex-start;
+        border-bottom-left-radius: 0;
+    }
+
+    .chat-message::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        width: 0;
+        height: 0;
+        border: 8px solid transparent;
+    }
+
+    .chat-message.sent::after {
+        right: -8px;
+        border-left-color: var(--chat-sent-bg);
+        border-bottom-color: var(--chat-sent-bg);
+    }
+
+    .chat-message.received::after {
+        left: -8px;
+        border-right-color: var(--chat-received-bg);
+        border-bottom-color: var(--chat-received-bg);
+    }
+
+    #payment-modal, #prescription-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        justify-content: center;
+        align-items: center;
+        z-index: 2000;
+    }
+
+    .modal-content {
+        background-color: var(--secondary-color);
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px var(--shadow-color);
+        max-width: 400px;
+        width: 100%;
+        position: relative;
+    }
+
+    .close-modal {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        font-size: 24px;
+        cursor: pointer;
+        background: none;
+        border: none;
+        color: var(--text-color);
+    }
+
+    #payment-form, #prescription-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    #payment-form input, #prescription-form input, #prescription-form textarea {
+        padding: 0.5rem;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+
+    #payment-form button, #prescription-form button, #download-pdf {
+        background-color: var(--primary-color);
+        color: var(--secondary-color);
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 25px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background-color 0.3s ease, transform 0.3s ease;
+    }
+
+    #payment-form button:hover, #prescription-form button:hover, #download-pdf:hover {
+        background-color: #a80f0f;
+        transform: scale(1.05);
+    }
+
+    #prescription {
+        background-color: var(--accent-color);
+        border: 1px solid var(--primary-color);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+
+    #prescription h3 {
+        color: var(--primary-color);
+        margin-top: 0;
+    }
+
+    #prescription ul {
+        padding-left: 1.5rem;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .fade-in {
+        animation: fadeIn 0.5s ease forwards;
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+
+    .pulse {
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes slideInRight {
+        from { transform: translateX(100%); }
+        to { transform: translateX(0); }
+    }
+
+    .slide-in-right {
+        animation: slideInRight 0.3s ease forwards;
+    }
+
+    @keyframes rotate {
+        from { transform:  rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    .rotate {
+        animation: rotate 2s linear infinite;
+    }
+
+    #file-input {
+        display: none;
+    }
+
+    #image-preview {
+        max-width: 200px;
+        max-height: 200px;
+        margin-top: 10px;
+        display: none;
+    }
+
+    .chat-message img {
+        max-width: 150px;
+        max-height: 150px;
+        border-radius: 10px;
+        margin-top: 5px;
+    }
+</style>
+</head>
+<body>
+    <header>
+        <h1>GynConnect</h1>
+        <p>Video Consultations with Top Indian Gynecologists</p>
+    </header>
+
+    <main>
+        <section id="gynecologist-list">
+            <!-- Gynecologists will be dynamically added here -->
+        </section>
+    </main>
+
+    <div id="video-conference">
+        <div id="video-grid">
+            <!-- Video containers will be dynamically added here -->
+        </div>
+        <div id="video-controls">
+            <button class="control-button" id="toggle-audio">🎤</button>
+            <button class="control-button" id="toggle-video">📷</button>
+            <button class="control-button" id="share-screen">💻</button>
+            <button class="control-button" id="toggle-chat">💬</button>
+            <button class="control-button" id="end-call">📞</button>
+        </div>
+        <div class="participants-grid">
+            <!-- Participant avatars will be dynamically added here -->
+        </div>
+    </div>
+
+    <div id="chat-panel">
+        <div id="chat-header">
+            <span>Chat</span>
+            <div>
+                <button id="end-chat">End Chat</button>
+                <button id="chat-close">&times;</button>
+            </div>
+        </div>
+        <div id="chat-messages"></div>
+        <div id="chat-input">
+            <input type="text" id="chat-message" placeholder="Type a message...">
+            <button id="attach-file">📎</button>
+            <button id="send-message">➤</button>
+        </div>
+        <input type="file" id="file-input" accept="image/*">
+        <img id="image-preview" alt="Preview">
+    </div>
+
+    <div id="payment-modal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeModal('payment-modal')">&times;</button>
+            <h2>Payment</h2>
+            <form id="payment-form">
+                <input type="text" id="card-number" placeholder="Card Number" required>
+                <input type="text" id="card-expiry" placeholder="MM/YY" required>
+                <input type="text" id="card-cvv" placeholder="CVV" required>
+                <button type="submit">Pay Now</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="prescription-modal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeModal('prescription-modal')">&times;</button>
+            <h2>Generate Prescription</h2>
+            <form id="prescription-form">
+                <input type="text" id="patient-name" placeholder="Patient Name" required>
+                <textarea id="medicines" placeholder="Prescribed Medicines (one per line)" required></textarea>
+                <textarea id="instructions" placeholder="Additional Instructions" required></textarea>
+                <button type="submit">Generate Prescription</button>
+            </form>
+            <div id="prescription" style="display: none;">
+                <h3>GynConnect Prescription</h3>
+                <p><strong>Patient Name:</strong> <span id="prescription-patient-name"></span></p>
+                <p><strong>Doctor:</strong> <span id="prescription-doctor-name"></span></p>
+                <p><strong>Date:</strong> <span id="prescription-date"></span></p>
+                <h4>Prescribed Medicines:</h4>
+                <ul id="prescription-medicines"></ul>
+                <p><strong>Instructions:</strong> <span id="prescription-instructions"></span></p>
+                <button id="download-pdf">Download PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+    <script>
+        const gynecologistList = document.getElementById('gynecologist-list');
+        const videoConference = document.getElementById('video-conference');
+        const videoGrid = document.getElementById('video-grid');
+        const endCallButton = document.getElementById('end-call');
+        const toggleAudioButton = document.getElementById('toggle-audio');
+        const toggleVideoButton = document.getElementById('toggle-video');
+        const shareScreenButton = document.getElementById('share-screen');
+        const toggleChatButton = document.getElementById('toggle-chat');
+        const chatPanel = document.getElementById('chat-panel');
+        const chatCloseButton = document.getElementById('chat-close');
+        const endChatButton = document.getElementById('end-chat');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-message');
+        const sendMessageButton = document.getElementById('send-message');
+        const participantsGrid = document.querySelector('.participants-grid');
+        const paymentModal = document.getElementById('payment-modal');
+        const paymentForm = document.getElementById('payment-form');
+        const prescriptionModal = document.getElementById('prescription-modal');
+        const prescriptionForm = document.getElementById('prescription-form');
+        const prescriptionDiv = document.getElementById('prescription');
+        const downloadPdfButton = document.getElementById('download-pdf');
+        const attachFileButton = document.getElementById('attach-file');
+        const fileInput = document.getElementById('file-input');
+        const imagePreview = document.getElementById('image-preview');
+
+        let localStream;
+        let remoteStream;
+        let peerConnection;
+        let selectedGynecologistId;
+        let screenStream;
+        let consultationType;
+        let selectedFile = null;
+
+        const pregnancyMedicines = [
+            "Prenatal Vitamins",
+            "Folic Acid",
+            "Iron Supplements",
+            "Calcium Supplements",
+            "Vitamin D",
+            "Omega-3 Fatty Acids",
+            "Magnesium",
+            "Probiotics",
+            "Vitamin B6",
+            "Ginger Capsules"
+        ];
+
+        const gynecologists = [
+            { id: 1, name: 'Dr. Priya Sharma', specialization: 'Obstetrics', price: 1500, chatPrice: 500, image: 'https://i.pravatar.cc/150?img=1', online: true },
+            { id: 2, name: 'Dr. Anita Desai', specialization: 'Gynecologic Oncology', price: 2000, chatPrice: 700, image: 'https://i.pravatar.cc/150?img=2', online: false },
+            { id: 3, name: 'Dr. Meera Patel', specialization: 'Reproductive Endocrinology', price: 1800, chatPrice: 600, image: 'https://i.pravatar.cc/150?img=3', online: true },
+            { id: 4, name: 'Dr. Ravi Kumar', specialization: 'Urogynecology', price: 1700, chatPrice: 550, image: 'https://i.pravatar.cc/150?img=4', online: false },
+            { id: 5, name: 'Dr. Sunita Reddy', specialization: 'Pediatric Gynecology', price: 1900, chatPrice: 650, image: 'https://i.pravatar.cc/150?img=5', online: true },
+            { id: 6, name: 'Dr. Arjun Gupta', specialization: 'Reproductive Medicine', price: 2100, chatPrice: 750, image: 'https://i.pravatar.cc/150?img=6', online: true },
+        ];
+
+        function createGynecologistCard(gynecologist, index) {
+            const card = document.createElement('div');
+            card.className = 'gynecologist-card fade-in';
+            card.style.animationDelay = `${index * 0.1}s`;
+            card.innerHTML = `
+                <div class="status-indicator ${gynecologist.online ? 'status-online' : 'status-offline'}"></div>
+                <img src="${gynecologist.image}" alt="${gynecologist.name}">
+                <h3>${gynecologist.name}</h3>
+                <p>${gynecologist.specialization}</p>
+                <p>Video Consultation: ₹${gynecologist.price}</p>
+                <p>Chat Consultation: ₹${gynecologist.chatPrice}</p>
+                <button onclick="startPayment(${gynecologist.id}, 'video')">Book Video Consultation</button>
+                <button onclick="startPayment(${gynecologist.id}, 'chat')">Start Chat</button>
+            `;
+            return card;
+        }
+
+        function displayGynecologists() {
+            gynecologists.forEach((gynecologist, index) => {
+                const card = createGynecologistCard(gynecologist, index);
+                gynecologistList.appendChild(card);
+            });
+        }
+
+        function startPayment(gynecologistId, type) {
+            selectedGynecologistId = gynecologistId;
+            consultationType = type;
+            const gynecologist = gynecologists.find(g => g.id === gynecologistId);
+            const price = type === 'video' ? gynecologist.price : gynecologist.chatPrice;
+            const paymentForm = document.getElementById('payment-form');
+            paymentForm.innerHTML = `
+                <h3>Consultation with ${gynecologist.name}</h3>
+                <p>Type: ${type === 'video' ? 'Video' : 'Chat'} Consultation</p>
+                <p>Price: ₹${price}</p>
+                <input type="text" id="card-number" placeholder="Card Number" required>
+                <input type="text" id="card-expiry" placeholder="MM/YY" required>
+                <input type="text" id="card-cvv" placeholder="CVV" required>
+                <button type="submit">Pay ₹${price}</button>
+            `;
+            paymentModal.style.display = 'flex';
+            paymentForm.onsubmit = processPayment;
+        }
+
+        function processPayment(e) {
+            e.preventDefault();
+            // In a real application, you would process the payment here
+            console.log('Processing payment...');
+            paymentModal.style.display = 'none';
+            if (consultationType === 'video') {
+                startConsultation(selectedGynecologistId);
+            } else {
+                startChat(selectedGynecologistId);
+            }
+        }
+
+        async function startConsultation(gynecologistId) {
+            console.log(`Starting video consultation with gynecologist ID: ${gynecologistId}`);
+            videoConference.style.display = 'block';
+            videoConference.classList.add('fade-in');
+
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                addVideoStream('You', localStream);
+
+                // Simulate remote participant (doctor)
+                const fakeRemoteStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                const gynecologist = gynecologists.find(g => g.id === gynecologistId);
+                addVideoStream(gynecologist.name, fakeRemoteStream);
+
+                addParticipantAvatar('You');
+                addParticipantAvatar(gynecologist.name);
+
+                // In a real application, you would set up WebRTC peer connection here
+                // setupPeerConnection();
+            } catch (error) {
+                console.error('Error starting video call:', error);
+                alert('Failed to start video call. Please check your camera and microphone permissions.');
+                endCall();
+            }
+        }
+
+        function startChat(gynecologistId) {
+            console.log(`Starting chat consultation with gynecologist ID: ${gynecologistId}`);
+            const gynecologist = gynecologists.find(g => g.id === gynecologistId);
+            chatPanel.classList.add('open');
+            chatMessages.innerHTML = ''; // Clear previous chat messages
+            addChatMessage('System', `You are now chatting with ${gynecologist.name}`);
+            document.querySelector('main').style.display = 'none';
+            
+            // Enable chat input and buttons
+            chatInput.disabled = false;
+            sendMessageButton.disabled = false;
+            attachFileButton.disabled = false;
+        }
+
+        function addVideoStream(userName, stream) {
+            const videoContainer = document.createElement('div');
+            videoContainer.className = 'video-container slide-in-right';
+            videoContainer.setAttribute('data-user-name', userName);
+
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            video.autoplay = true;
+            video.playsInline = true;
+            if (userName === 'You') {
+                video.muted = true;
+            }
+
+            videoContainer.appendChild(video);
+            videoGrid.appendChild(videoContainer);
+        }
+
+        function addParticipantAvatar(userName) {
+            const participant = document.createElement('div');
+            participant.className = 'participant';
+            const avatar = document.createElement('div');
+            avatar.className = 'participant-avatar pulse';
+            avatar.textContent = userName.charAt(0).toUpperCase();
+            participant.appendChild(avatar);
+            participant.innerHTML += userName;
+            participantsGrid.appendChild(participant);
+        }
+
+        function endCall() {
+            const videoContainers = videoGrid.querySelectorAll('.video-container');
+            videoContainers.forEach(container => {
+                const video = container.querySelector('video');
+                const stream = video.srcObject;
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                container.remove();
+            });
+
+            if (screenStream) {
+                screenStream.getTracks().forEach(track => track.stop());
+            }
+
+            videoConference.style.display = 'none';
+            participantsGrid.innerHTML = '';
+            chatPanel.classList.remove('open');
+            chatMessages.innerHTML = '';
+            document.querySelector('main').style.display = 'block';
+            resetPrescriptionForm();
+            showPrescriptionForm();
+        }
+
+        function endChat() {
+            chatPanel.classList.remove('open');
+            document.querySelector('main').style.display = 'block';
+            resetPrescriptionForm();
+            showPrescriptionForm();
+            
+            // Reset chat-related variables and UI elements
+            chatMessages.innerHTML = '';
+            chatInput.value = '';
+            selectedFile = null;
+            imagePreview.style.display = 'none';
+            
+            // Disable chat input and buttons
+            chatInput.disabled = true;
+            sendMessageButton.disabled = true;
+            attachFileButton.disabled = true;
+        }
+
+        function resetPrescriptionForm() {
+            document.getElementById('patient-name').value = '';
+            document.getElementById('medicines').value = '';
+            document.getElementById('instructions').value = '';
+            prescriptionForm.style.display = 'block';
+            prescriptionDiv.style.display = 'none';
+        }
+
+        function showPrescriptionForm() {
+            prescriptionModal.style.display = 'flex';
+        }
+
+        function toggleAudio() {
+            const audioTracks = localStream.getAudioTracks();
+            audioTracks.forEach(track => track.enabled = !track.enabled);
+            toggleAudioButton.textContent = audioTracks[0].enabled ? '🎤' : '🔇';
+            toggleAudioButton.classList.toggle('pulse');
+        }
+
+        function toggleVideo() {
+            const videoTracks = localStream.getVideoTracks();
+            videoTracks.forEach(track => track.enabled = !track.enabled);
+            toggleVideoButton.textContent = videoTracks[0].enabled ? '📷' : '🚫';
+            toggleVideoButton.classList.toggle('pulse');
+        }
+
+        async function shareScreen() {
+            try {
+                screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+                const videoTrack = screenStream.getVideoTracks()[0];
+                
+                // Replace the video track in the local stream
+                const sender = peerConnection.getSenders().find(s => s.track.kind === 'video');
+                sender.replaceTrack(videoTrack);
+
+                // Update the local video element
+                const localVideo = document.querySelector('.video-container[data-user-name="You"] video');
+                localVideo.srcObject = screenStream;
+
+                shareScreenButton.classList.add('rotate');
+
+                videoTrack.onended = () => {
+                    const localVideoTrack = localStream.getVideoTracks()[0];
+                    sender.replaceTrack(localVideoTrack);
+                    localVideo.srcObject = localStream;
+                    shareScreenButton.classList.remove('rotate');
+                };
+            } catch (error) {
+                console.error('Error sharing screen:', error);
+                shareScreenButton.classList.remove('rotate');
+            }
+        }
+
+        function toggleChat() {
+            chatPanel.classList.toggle('open');
+            toggleChatButton.classList.toggle('pulse');
+        }
+
+        function sendChatMessage() {
+            const message = chatInput.value.trim();
+            if (message || selectedFile) {
+                if (message) {
+                    addChatMessage('You', message);
+                }
+                if (selectedFile) {
+                    addChatImage('You', selectedFile);
+                }
+                chatInput.value = '';
+                selectedFile = null;
+                imagePreview.style.display = 'none';
+
+                // Simulate doctor's response
+                setTimeout(() => {
+                    const doctorName = gynecologists.find(g => g.id === selectedGynecologistId).name;
+                    addChatMessage(doctorName, 'Thank you for your message. How can I assist you today?');
+                }, 1000);
+            }
+        }
+
+        function addChatMessage(sender, message) {
+            const messageElement = document.createElement('div');
+            messageElement.className = `chat-message ${sender === 'You' ? 'sent' : 'received'} slide-in-right`;
+            messageElement.textContent = message;
+            chatMessages.appendChild(messageElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function addChatImage(sender, file) {
+            const messageElement = document.createElement('div');
+            messageElement.className = `chat-message ${sender === 'You' ? 'sent' : 'received'} slide-in-right`;
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(file);
+            messageElement.appendChild(img);
+            chatMessages.appendChild(messageElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function generatePrescription(patientName, medicines, instructions, doctorName) {
+            const prescriptionPatientName = document.getElementById('prescription-patient-name');
+            const prescriptionDoctorName = document.getElementById('prescription-doctor-name');
+            const prescriptionDate = document.getElementById('prescription-date');
+            const prescriptionMedicines = document.getElementById('prescription-medicines');
+            const prescriptionInstructions = document.getElementById('prescription-instructions');
+
+            prescriptionPatientName.textContent = patientName;
+            prescriptionDoctorName.textContent = doctorName;
+            prescriptionDate.textContent = new Date().toLocaleDateString();
+
+            // Add 3 random pregnancy-related medicines
+            const randomMedicines = getRandomMedicines(3);
+            const allMedicines = medicines.split('\n').concat(randomMedicines);
+            prescriptionMedicines.innerHTML = allMedicines.map(med => `<li>${med}</li>`).join('');
+
+            prescriptionInstructions.textContent = instructions;
+
+            prescriptionForm.style.display = 'none';
+            prescriptionDiv.style.display = 'block';
+        }
+
+        function getRandomMedicines(count) {
+            const shuffled = pregnancyMedicines.sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, count);
+        }
+
+        function downloadPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            doc.setFontSize(20);
+            doc.text('GynConnect Prescription', 105, 20, null, null, 'center');
+
+            doc.setFontSize(12);
+            doc.text(`Patient Name: ${document.getElementById('prescription-patient-name').textContent}`, 20, 40);
+            doc.text(`Doctor: ${document.getElementById('prescription-doctor-name').textContent}`, 20, 50);
+            doc.text(`Date: ${document.getElementById('prescription-date').textContent}`, 20, 60);
+
+            doc.setFontSize(14);
+            doc.text('Prescribed Medicines:', 20, 80);
+
+            const medicines = document.getElementById('prescription-medicines').getElementsByTagName('li');
+            let yPos = 90;
+            for (let i = 0; i < medicines.length; i++) {
+                doc.text(`• ${medicines[i].textContent}`, 30, yPos);
+                yPos += 10;
+            }
+
+            doc.setFontSize(14);
+            doc.text('Instructions:', 20, yPos + 10);
+            doc.setFontSize(12);
+            const instructions = doc.splitTextToSize(document.getElementById('prescription-instructions').textContent, 170);
+            doc.text(instructions, 20, yPos + 20);
+
+            doc.save('GynConnect_Prescription.pdf');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        endCallButton.addEventListener('click', endCall);
+        endChatButton.addEventListener('click', endChat);
+        toggleAudioButton.addEventListener('click', toggleAudio);
+        toggleVideoButton.addEventListener('click', toggleVideo);
+        shareScreenButton.addEventListener('click', shareScreen);
+        toggleChatButton.addEventListener('click', toggleChat);
+        chatCloseButton.addEventListener('click', toggleChat);
+        sendMessageButton.addEventListener('click', sendChatMessage);
+        downloadPdfButton.addEventListener('click', downloadPDF);
+
+        attachFileButton.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                selectedFile = file;
+                imagePreview.src = URL.createObjectURL(file);
+                imagePreview.style.display = 'block';
+            }
+        });
+
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendChatMessage();
+            }
+        });
+
+        prescriptionForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const patientName = document.getElementById('patient-name').value;
+            const medicines = document.getElementById('medicines').value;
+            const instructions = document.getElementById('instructions').value;
+            const doctorName = gynecologists.find(g => g.id === selectedGynecologistId).name;
+
+            generatePrescription(patientName, medicines, instructions, doctorName);
+        });
+
+        // Initialize chat input and buttons as disabled
+        chatInput.disabled = true;
+        sendMessageButton.disabled = true;
+        attachFileButton.disabled = true;
+
+        displayGynecologists();
+    </script>
+</body>
+</html>

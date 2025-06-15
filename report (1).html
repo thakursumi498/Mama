@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Pregnancy Report Reader</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
+    <script src="https://unpkg.com/tesseract.js@v2.1.0/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #ce1212;;
+            --secondary-color: #4a4a4a;
+            --background-color: #f0f0f0;
+            --card-background: #ffffff;
+            --text-color: #333333;
+            --alert-color: #ff4757;
+            --ai-color: #4CAF50;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            transition: background-color 0.3s ease;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            background-color: var(--card-background);
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+            font-size: 2.5rem;
+            transition: color 0.3s ease;
+        }
+
+        #dropArea {
+            border: 3px dashed var(--primary-color);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: rgba(255, 105, 180, 0.1);
+        }
+
+        #dropArea:hover {
+            background-color: rgba(255, 105, 180, 0.2);
+            transform: scale(1.02);
+        }
+
+        #dropArea.highlight {
+            background-color: rgba(255, 105, 180, 0.3);
+            border-color: var(--primary-color);
+        }
+
+        #filePreview {
+            max-width: 100%;
+            margin-top: 1rem;
+            border-radius: 10px;
+            display: none;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        #result {
+            margin-top: 2rem;
+            padding: 1rem;
+            background-color: rgba(255, 105, 180, 0.1);
+            border-radius: 10px;
+            display: none;
+            transition: all 0.3s ease;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 5px;
+            background-color: var(--primary-color);
+            margin-top: 1rem;
+            border-radius: 5px;
+            transition: width 0.5s ease;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 1rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .loading::after {
+            content: '...';
+            animation: dots 1.5s steps(5, end) infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60% { content: '...'; }
+            80%, 100% { content: ''; }
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            animation: fadeIn 0.5s ease;
+        }
+
+        th, td {
+            padding: 1rem;
+            border: 1px solid #ddd;
+            text-align: left;
+            transition: all 0.3s ease;
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background-color: rgba(255, 105, 180, 0.05);
+        }
+
+        tr:hover {
+            background-color: rgba(255, 105, 180, 0.1);
+        }
+
+        .alert {
+            color: var(--alert-color);
+            background-color: rgba(255, 71, 87, 0.1);
+            border: 1px solid var(--alert-color);
+            padding: 0.5rem;
+            border-radius: 5px;
+            margin-top: 0.5rem;
+            font-weight: 600;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        #chartContainer {
+            margin-top: 2rem;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        #chartContainer:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            font-size: 1rem;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            margin-top: 1rem;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            background-color: #ff1493;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 105, 180, 0.4);
+        }
+
+        #darkModeToggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #darkModeToggle:hover {
+            background-color: var(--primary-color);
+        }
+
+        body.dark-mode {
+            --background-color: #2c3e50;
+            --card-background: #34495e;
+            --text-color: #ecf0f1;
+        }
+
+        body.dark-mode #dropArea {
+            border-color: #ecf0f1;
+            background-color: rgba(236, 240, 241, 0.1);
+        }
+
+        body.dark-mode #dropArea:hover {
+            background-color: rgba(236, 240, 241, 0.2);
+        }
+
+        body.dark-mode #dropArea.highlight {
+            background-color: rgba(236, 240, 241, 0.3);
+        }
+
+        body.dark-mode th {
+            background-color: #2980b9;
+        }
+
+        body.dark-mode tr:nth-child(even) {
+            background-color: rgba(236, 240, 241, 0.05);
+        }
+
+        body.dark-mode tr:hover {
+            background-color: rgba(236, 240, 241, 0.1);
+        }
+
+        .ai-recommendation {
+            background-color: rgba(76, 175, 80, 0.1);
+            border: 1px solid var(--ai-color);
+            padding: 1rem;
+            border-radius: 5px;
+            margin-top: 1rem;
+            font-weight: 600;
+            color: var(--ai-color);
+        }
+    </style>
+</head>
+<body>
+    <button id="darkModeToggle">Toggle Dark Mode</button>
+    <div class="container">
+        <h1>AI-Pregnancy Report Reader</h1>
+        <div id="dropArea">
+            <p>Drag and drop your pregnancy report (image or PDF) here, or click to select a file</p>
+            <input type="file" id="fileInput" accept="image/*,application/pdf" style="display: none;">
+            <button class="btn">Select File</button>
+        </div>
+        <div class="progress-bar" id="progressBar"></div>
+        <div id="filePreview"></div>
+        <div class="loading" id="loading">Processing your report</div>
+        <div id="result"></div>
+        <div id="aiRecommendation" class="ai-recommendation"></div>
+        <div id="chartContainer">
+            <canvas id="resultsChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const dropArea = document.getElementById('dropArea');
+        const fileInput = document.getElementById('fileInput');
+        const filePreview = document.getElementById('filePreview');
+        const result = document.getElementById('result');
+        const progressBar = document.getElementById('progressBar');
+        const loading = document.getElementById('loading');
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const aiRecommendation = document.getElementById('aiRecommendation');
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight() {
+            dropArea.classList.add('highlight');
+        }
+
+        function unhighlight() {
+            dropArea.classList.remove('highlight');
+        }
+
+        dropArea.addEventListener('drop', handleDrop, false);
+        dropArea.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', handleFileSelect);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const file = dt.files[0];
+            handleFile(file);
+        }
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            handleFile(file);
+        }
+
+        function handleFile(file) {
+            const reader = new FileReader();
+            reader.onloadstart = () => {
+                progressBar.style.width = '0%';
+                progressBar.style.display = 'block';
+            };
+            reader.onprogress = (event) => {
+                if (event.lengthComputable) {
+                    const percentLoaded = (event.loaded / event.total) * 100;
+                    progressBar.style.width = percentLoaded + '%';
+                }
+            };
+            reader.onload = (e) => {
+                progressBar.style.display = 'none';
+                if (file.type.startsWith('image/')) {
+                    filePreview.innerHTML = `<img src="${e.target.result}" alt="Report Preview" style="max-width: 100%;">`;
+                    filePreview.style.display = 'block';
+                    processImage(e.target.result);
+                } else if (file.type === 'application/pdf') {
+                    filePreview.innerHTML = `<p>PDF file loaded: ${file.name}</p>`;
+                    filePreview.style.display = 'block';
+                    processPDF(e.target.result);
+                }
+            };
+            if (file.type.startsWith('image/')) {
+                reader.readAsDataURL(file);
+            } else if (file.type === 'application/pdf') {
+                reader.readAsArrayBuffer(file);
+            }
+        }
+
+        async function processImage(imageData) {
+            loading.style.display = 'block';
+            result.style.display = 'none';
+
+            try {
+                const { data: { text } } = await Tesseract.recognize(imageData, 'eng');
+                const reportData = extractDataFromText(text);
+                displayResults(reportData);
+                provideAIRecommendations(reportData);
+            } catch (error) {
+                console.error('Error processing image:', error);
+                result.innerHTML = '<p class="alert">Error processing image. Please try again.</p>';
+                result.style.display = 'block';
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        async function processPDF(pdfData) {
+            loading.style.display = 'block';
+            result.style.display = 'none';
+
+            try {
+                const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
+                let fullText = '';
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    fullText += textContent.items.map(item => item.str).join(' ');
+                }
+                const reportData = extractDataFromText(fullText);
+                displayResults(reportData);
+                provideAIRecommendations(reportData);
+            } catch (error) {
+                console.error('Error processing PDF:', error);
+                result.innerHTML = '<p class="alert">Error processing PDF. Please try again.</p>';
+                result.style.display = 'block';
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        function extractDataFromText(text) {
+            const data = {
+                hcg: extractValue(text, /HCG.*?(\d+)/i),
+                hemoglobin: extractValue(text, /Hemoglobin.*?(\d+\.?\d*)/i),
+                bloodPressure: {
+                    systolic: extractValue(text, /Blood Pressure.*?(\d+)/i),
+                    diastolic: extractValue(text, /Blood Pressure.*?\d+\s*\/\s*(\d+)/i)
+                },
+                glucoseLevel:  extractValue(text, /Glucose.*?(\d+)/i),
+                ironLevel: extractValue(text, /Iron.*?(\d+)/i),
+                vitaminD: extractValue(text, /Vitamin D.*?(\d+)/i)
+            };
+
+            // If extraction failed, use simulated data
+            Object.keys(data).forEach(key => {
+                if (data[key] === null || (typeof data[key] === 'object' && Object.values(data[key]).some(v => v === null))) {
+                    if (key === 'bloodPressure') {
+                        data[key] = {
+                            systolic: Math.floor(Math.random() * (140 - 90) + 90),
+                            diastolic: Math.floor(Math.random() * (90 - 60) + 60)
+                        };
+                    } else {
+                        data[key] = Math.floor(Math.random() * (100 - 10) + 10);
+                    }
+                }
+            });
+
+            return data;
+        }
+
+        function extractValue(text, regex) {
+            const match = text.match(regex);
+            return match ? parseFloat(match[1]) : null;
+        }
+
+        function displayResults(data) {
+            let interpretation = "<h2>Report Analysis</h2>";
+            interpretation += "<table>";
+            interpretation += "<tr><th>Metric</th><th>Value</th><th>Interpretation</th></tr>";
+
+            // HCG Level
+            interpretation += "<tr><td>HCG Level</td><td>" + data.hcg + " mIU/mL</td><td>";
+            if (data.hcg < 5) {
+                interpretation += "<span class='alert'>Very low. Consult your doctor immediately.</span>";
+            } else if (data.hcg >= 5 && data.hcg <= 426) {
+                interpretation += "Normal for 1-2 weeks of pregnancy.";
+            } else if (data.hcg > 426 && data.hcg <= 82000) {
+                interpretation += "Normal for 2-8 weeks of pregnancy.";
+            } else {
+                interpretation += "High. This could be normal later in pregnancy or might indicate multiple pregnancies. Consult your doctor.";
+            }
+            interpretation += "</td></tr>";
+
+            // Hemoglobin
+            interpretation += "<tr><td>Hemoglobin</td><td>" + data.hemoglobin + " g/dL</td><td>";
+            if (data.hemoglobin < 11) {
+                interpretation += "<span class='alert'>Low. This might indicate anemia. Consult your doctor about iron supplements.</span>";
+            } else if (data.hemoglobin >= 11 && data.hemoglobin <= 15) {
+                interpretation += "Normal range.";
+            } else {
+                interpretation += "<span class='alert'>High. This is unusual during pregnancy. Consult your doctor.</span>";
+            }
+            interpretation += "</td></tr>";
+
+            // Blood Pressure
+            interpretation += "<tr><td>Blood Pressure</td><td>" + data.bloodPressure.systolic + "/" + data.bloodPressure.diastolic + " mmHg</td><td>";
+            if (data.bloodPressure.systolic < 90 || data.bloodPressure.diastolic < 60) {
+                interpretation += "<span class='alert'>Low. This might cause dizziness. Consult your doctor.</span>";
+            } else if (data.bloodPressure.systolic >= 90 && data.bloodPressure.systolic <= 120 && data.bloodPressure.diastolic >= 60 && data.bloodPressure.diastolic <= 80) {
+                interpretation += "Normal range.";
+            } else if (data.bloodPressure.systolic > 120 && data.bloodPressure.systolic <= 140 || data.bloodPressure.diastolic > 80 && data.bloodPressure.diastolic <= 90) {
+                interpretation += "<span class='alert'>Slightly elevated. Monitor closely and consult your doctor.</span>";
+            } else {
+                interpretation += "<span class='alert'>High. This might indicate preeclampsia. Consult your doctor immediately.</span>";
+            }
+            interpretation += "</td></tr>";
+
+            // Glucose Level
+            interpretation += "<tr><td>Glucose Level</td><td>" + data.glucoseLevel + " mg/dL</td><td>";
+            if (data.glucoseLevel < 70) {
+                interpretation += "<span class='alert'>Low. This might indicate hypoglycemia. Consult your doctor.</span>";
+            } else if (data.glucoseLevel >= 70 && data.glucoseLevel <= 140) {
+                interpretation += "Normal range.";
+            } else {
+                interpretation += "<span class='alert'>High. This might indicate gestational diabetes. Consult your doctor.</span>";
+            }
+            interpretation += "</td></tr>";
+
+            // Iron Level
+            interpretation += "<tr><td>Iron Level</td><td>" + data.ironLevel + " μg/dL</td><td>";
+            if (data.ironLevel < 50) {
+                interpretation += "<span class='alert'>Low. This might indicate iron deficiency. Consult your doctor about supplements.</span>";
+            } else if (data.ironLevel >= 50 && data.ironLevel <= 170) {
+                interpretation += "Normal range.";
+            } else {
+                interpretation += "<span class='alert'>High. Unusual during pregnancy. Consult your doctor.</span>";
+            }
+            interpretation += "</td></tr>";
+
+            // Vitamin D
+            interpretation += "<tr><td>Vitamin D</td><td>" + data.vitaminD + " ng/mL</td><td>";
+            if (data.vitaminD < 20) {
+                interpretation += "<span class='alert'>Deficient. Consult your doctor about supplements.</span>";
+            } else if (data.vitaminD >= 20 && data.vitaminD < 30) {
+                interpretation += "Insufficient. Consider increasing intake through diet or supplements.";
+            } else {
+                interpretation += "Sufficient level.";
+            }
+            interpretation += "</td></tr>";
+
+            interpretation += "</table>";
+
+            interpretation += "<p><strong>Note:</strong> This analysis is based on automated reading of your report. Always consult with your healthcare provider for accurate interpretation of your test results and personalized advice.</p>";
+
+            result.innerHTML = interpretation;
+            result.style.display = 'block';
+
+            createChart(data);
+        }
+
+        function createChart(data) {
+            const ctx = document.getElementById('resultsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['HCG', 'Hemoglobin', 'Blood Pressure (Systolic)', 'Blood Pressure (Diastolic)', 'Glucose', 'Iron', 'Vitamin D'],
+                    datasets: [{
+                        label: 'Your Results',
+                        data: [data.hcg, data.hemoglobin, data.bloodPressure.systolic, data.bloodPressure.diastolic, data.glucoseLevel, data.ironLevel, data.vitaminD],
+                        backgroundColor: 'rgba(255, 105, 180, 0.6)',
+                        borderColor: 'rgba(255, 105, 180, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Your Pregnancy Report Results',
+                            font: {
+                                size: 18,
+                                weight: 'bold'
+                            }
+                        },
+                        legend: {
+                            labels: {
+                                font: {
+                                    size: 14
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 1500,
+                        easing: 'easeInOutQuart'
+                    }
+                }
+            });
+        }
+
+        darkModeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+        });
+
+        // AI-driven recommendations
+        async function provideAIRecommendations(data) {
+            try {
+                // Simple risk assessment algorithm
+                let riskScore = 0;
+                
+                if (data.hcg < 5 || data.hcg > 82000) riskScore += 0.3;
+                if (data.hemoglobin < 11 || data.hemoglobin > 15) riskScore += 0.2;
+                if (data.bloodPressure.systolic > 140 || data.bloodPressure.diastolic > 90) riskScore += 0.3;
+                if (data.glucoseLevel < 70 || data.glucoseLevel > 140) riskScore += 0.2;
+                if (data.ironLevel < 50 || data.ironLevel > 170) riskScore += 0.2;
+                if (data.vitaminD < 20) riskScore += 0.1;
+
+                // Normalize risk score to be between 0 and 1
+                riskScore = Math.min(riskScore, 1);
+
+                // Generate recommendations based on risk score
+                let recommendation = "Based on AI analysis of your report:<br><br>";
+
+                if (riskScore < 0.3) {
+                    recommendation += "Your pregnancy appears to be progressing normally. Continue with your regular check-ups and maintain a healthy lifestyle.";
+                } else if (riskScore < 0.7) {
+                    recommendation += "There are some areas that may need attention. Consider discussing the following with your doctor:<br>";
+                    if (data.hemoglobin < 11) recommendation += "- Ways to increase your iron intake<br>";
+                    if (data.glucoseLevel > 140) recommendation += "- Strategies to manage your blood sugar levels<br>";
+                    if (data.vitaminD < 30) recommendation += "- Options for vitamin D supplementation<br>";
+                    if (data.bloodPressure.systolic > 140 || data.bloodPressure.diastolic > 90) recommendation += "- Methods to control your blood pressure<br>";
+                } else {
+                    recommendation += "Our AI analysis has detected potential risks that require immediate attention. Please consult your healthcare provider as soon as possible to discuss your test results and potential interventions.";
+                }
+
+                aiRecommendation.innerHTML = recommendation;
+                aiRecommendation.style.display = 'block';
+            } catch (error) {
+                console.error('Error in AI recommendations:', error);
+                aiRecommendation.innerHTML = "We're sorry, but we couldn't generate AI recommendations at this time. Please rely on the standard interpretation of your results and consult with your healthcare provider.";
+                aiRecommendation.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>

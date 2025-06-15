@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Priyanka's Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: 'Roboto', sans-serif;
+            background-color: #f2f2f2;
+            height: 100%;
+            overflow-x: hidden;
+        }
+        .dashboard {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            grid-template-rows: auto 1fr;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+        .header {
+            grid-column: 1 / -1;
+            background-color: #FFE5E5;
+            color: #FA0606;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+        .header h1 {
+            margin: 0;
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+        .sidebar {
+            background-color: #f2f2f2;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 5;
+        }
+        .main-content {
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            overflow-y: auto;
+            position: relative;
+        }
+        .amma-container {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        .amma-image {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 5px solid #FA0606;
+            box-shadow: 0 0 20px rgba(250, 6, 6, 0.3);
+            transition: transform 0.3s ease;
+        }
+        .amma-image:hover {
+            transform: scale(1.05);
+        }
+        .feature-button {
+            background-color: #FA0606;
+            color: #f2f2f2;
+            border: none;
+            padding: 0.75rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .feature-button:hover {
+            background-color: #d50000;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .content-card {
+            background-color: #ffffff;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        .content-card:hover {
+            transform: translateY(-5px);
+        }
+        .content-card h2 {
+            color: #FA0606;
+            margin-top: 0;
+            font-weight: 500;
+        }
+        .speech-bubble {
+            grid-column: 1 / -1;
+            position: relative;
+            background-color: #ffffff;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            margin: 0 auto;
+            opacity: 0;
+            transform: scale(0.9);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .speech-bubble.active {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            border: 10px solid transparent;
+            border-bottom-color: #ffffff;
+            transform: translateX(-50%);
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #f2f2f2;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .progress {
+            width: 75%;
+            height: 100%;
+            background-color: #FA0606;
+            transition: width 0.5s ease;
+        }
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+        }
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f2f2f2;
+            border-radius: 5px;
+            font-size: 0.8rem;
+        }
+        .calendar-day.active {
+            background-color: #FA0606;
+            color: #ffffff;
+        }
+        .feature-link {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 0.5rem 1rem;
+            background-color: #FA0606;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        .feature-link:hover {
+            background-color: #d50000;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .background-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+        .bubble {
+            position: absolute;
+            border-radius: 50%;
+            background-color: rgba(250, 6, 6, 0.1);
+            animation: float 20s infinite ease-in-out;
+        }
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(25%, 25%); }
+            50% { transform: translate(0%, 50%); }
+            75% { transform: translate(-25%, 25%); }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-animation"></div>
+    <div class="dashboard">
+        <header class="header">
+            <h1>Welcome to Mamagiggles</h1>
+            <div>
+                <span>Priyanka Singh</span>
+                <span>Age: 24 | Trimester: 3</span>
+            </div>
+        </header>
+        <nav class="sidebar">
+            <button class="feature-button" data-feature="appointments">Appointment Reminders</button>
+            <button class="feature-button" data-feature="nutrition">Nutritional Guidance</button>
+            <button class="feature-button" data-feature="gynecologist">Nearby Gynecologist</button>
+            <button class="feature-button" data-feature="mentalHealth">Mental Health Support</button>
+            <button class="feature-button" data-feature="gynConnect">Gyn-connect</button>
+            <button class="feature-button" data-feature="reportReader">Report Reader</button>
+            <button class="feature-button" data-feature="shopping">Shopping (Coming Soon)</button>
+            <button class="feature-button" data-feature="vaccination">Vaccination Records (Coming Soon)</button>
+        </nav>
+        <main class="main-content">
+            <div class="amma-container">
+                <img src="assets/img/amma.jpg" alt="Amma" class="amma-image pulse">
+            </div>
+            <div class="speech-bubble">
+                <p>Welcome to your pregnancy journey! I'm Amma, your guide through this amazing experience. Click on a feature to learn more!</p>
+            </div>
+            <div class="content-card">
+                <h2>Your Pregnancy Progress</h2>
+                <p>Week 32 of 40</p>
+                <div class="progress-bar">
+                    <div class="progress"></div>
+                </div>
+                <p>Your baby is now the size of a squash!</p>
+            </div>
+            <div class="content-card">
+                <h2>Upcoming Appointments</h2>
+                <ul>
+                    <li>May 15 - Regular Check-up</li>
+                    <li>May 22 - Ultrasound</li>
+                    <li>June 5 - Prenatal Class</li>
+                </ul>
+            </div>
+            <div class="content-card">
+                <h2>Nutrition Tip of the Day</h2>
+                <p>Boost your iron intake with leafy greens like spinach and kale. They're packed with nutrients essential for your baby's development!</p>
+            </div>
+            <div class="content-card">
+                <h2>Your Pregnancy Calendar</h2>
+                <div class="calendar">
+                    <div class="calendar-day">1</div>
+                    <div class="calendar-day">2</div>
+                    <div class="calendar-day">3</div>
+                    <div class="calendar-day">4</div>
+                    <div class="calendar-day">5</div>
+                    <div class="calendar-day">6</div>
+                    <div class="calendar-day">7</div>
+                    <div class="calendar-day">8</div>
+                    <div class="calendar-day">9</div>
+                    <div class="calendar-day active">10</div>
+                    <div class="calendar-day">11</div>
+                    <div class="calendar-day">12</div>
+                    <div class="calendar-day">13</div>
+                    <div class="calendar-day">14</div>
+                </div>
+            </div>
+            <section id="appointment">
+                <!-- Calendly inline widget begin -->
+                <div class="calendly-inline-widget"
+                data-url="https://calendly.com/shauryap683/gynecologist-appointment?hide_gdpr_banner=1&background_color=f3e0e0"
+                style="min-width:320px;height:700px;"></div>
+                <script type="text/javascript" src="https://assets.calendly.com/assets/external/widget.js" async></script>
+                <!-- Calendly inline widget end -->
+                </section>
+        </main>
+    </div>
+
+    <script>
+        const features = {
+            appointments: {
+                description: "Never miss an important check-up with our smart reminder system. I'll help you keep track of all your appointments and send you timely notifications.",
+                link: "#appointment"
+            },
+            nutrition: {
+                description: "Eating right is crucial during pregnancy. I'll provide you with personalized meal plans and nutrition advice tailored to your trimester and dietary needs.",
+                link: "nutrition.html"
+            },
+            gynecologist: {
+                description: "Finding the right doctor is important. I can help you locate trusted gynecologists in your area, complete with reviews and contact information.",
+                link: "locator.html"
+            },
+            mentalHealth: {
+                description: "Pregnancy can be an emotional journey. Our 24/7 chat support is here to provide you with emotional well-being resources and support whenever you need it.",
+                link: "index.html"
+            },
+            gynConnect: {
+                description: "You're not alone in this journey! Connect with other expectant mothers, share experiences, and build a supportive community through our platform.",
+                link: "#gyn-connect"
+            },
+            reportReader: {
+                description: "Medical reports can be confusing. I'll help you understand your test results and medical reports with easy-to-understand explanations.",
+                link: "report(1).html"
+            },
+            shopping: {
+                description: "Soon, you'll be able to shop for all your pregnancy and baby needs right here! We're working on bringing you a curated selection of essential products.",
+                link: "#shopping"
+            },
+            vaccination: {
+                description: "Keep track of your baby's vaccination schedule with our upcoming feature. We'll help you stay on top of important immunizations and provide reminders for upcoming shots.",
+                link: "#vaccination"
+            }
+        };
+
+        const featureButtons = document.querySelectorAll('.feature-button');
+        const speechBubble = document.querySelector('.speech-bubble');
+        const ammaImage = document.querySelector('.amma-image');
+
+        // Initial animation
+        setTimeout(() => {
+            speechBubble.classList.add('active');
+        }, 500);
+
+        featureButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const feature = button.getAttribute('data-feature');
+                speechBubble.classList.remove('active');
+                
+                setTimeout(() => {
+                    speechBubble.innerHTML = `
+                        <p>${features[feature].description}</p>
+                        <a href="${features[feature].link}" class="feature-link">Learn More</a>
+                    `;
+                    speechBubble.classList.add('active');
+                }, 300);
+
+                // Amma image animation
+                ammaImage.classList.remove('pulse');
+                void ammaImage.offsetWidth; // Trigger reflow
+                ammaImage.classList.add('pulse');
+            });
+        });
+
+        // Background animation
+        const backgroundAnimation = document.querySelector('.background-animation');
+        const bubbleCount = 10;
+
+        for (let i = 0; i < bubbleCount; i++) {
+            const bubble = document.createElement('div');
+            bubble.classList.add('bubble');
+            bubble.style.width = `${Math.random() * 100 + 50}px`;
+            bubble.style.height = bubble.style.width;
+            bubble.style.left = `${Math.random() * 100}%`;
+            bubble.style.top = `${Math.random() * 100}%`;
+            bubble.style.animationDelay = `${Math.random() * 20}s`;
+            backgroundAnimation.appendChild(bubble);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advanced Pregnancy Nutrition Guide</title>
+ 
+</head>
+<body>
+  <div class="min-h-screen">
+    <div class="container">
+      <h1>Advanced Pregnancy Nutrition Guide</h1>
+
+      <form id="nutritionForm">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="trimester">Trimester</label>
+            <select id="trimester" required>
+              <option value="">Select trimester</option>
+              <option value="first">First Trimester</option>
+              <option value="second">Second Trimester</option>
+              <option value="third">Third Trimester</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="weight">Weight (kg)</label>
+            <input type="number" id="weight" required min="30" max="200" step="0.1">
+          </div>
+
+          <div class="form-group">
+            <label for="heightFt">Height (ft)</label>
+            <input type="number" id="heightFt" required min="3" max="8">
+          </div>
+
+          <div class="form-group">
+            <label for="heightIn">Height (in)</label>
+            <input type="number" id="heightIn" required min="0" max="11">
+          </div>
+
+          <div class="form-group">
+            <label for="age">Age</label>
+            <input type="number" id="age" required min="18" max="50">
+          </div>
+
+          <div class="form-group">
+            <label for="diet">Dietary Preference</label>
+            <select id="diet" required>
+              <option value="vegetarian">Vegetarian</option>
+              <option value="non-vegetarian">Non-Vegetarian</option>
+              <option value="vegan">Vegan</option>
+            </select>
+          </div>
+
+          <div class="form-group span-2">
+            <label for="allergies">Allergies (comma-separated)</label>
+            <input type="text" id="allergies" placeholder="e.g., peanuts, milk">
+          </div>
+
+          <div class="form-group span-2">
+            <label for="diseases">Pre-existing Conditions</label>
+            <select id="diseases" multiple class="h-24">
+              <option value="diabetes">Gestational Diabetes</option>
+              <option value="hypertension">Hypertension</option>
+              <option value="anemia">Anemia</option>
+              <option value="thyroid">Thyroid Disorder</option>
+            </select>
+          </div>
+        </div>
+
+        <button type="submit" class="submit-btn">Get Personalized Nutrition Guide</button>
+      </form>
+    </div>
+
+    <div id="resultsModal" class="modal hidden">
+      <div class="modal-overlay"></div>
+      <div class="modal-container">
+        <div class="modal-header">
+          <h2>Your Personalized Nutrition Guide</h2>
+          <button class="close-btn">&times;</button>
+        </div>
+        
+        <div class="modal-content">
+          <div class="info-grid">
+            <div class="info-card purple">
+              <h3>Daily Nutritional Needs</h3>
+              <ul class="needs-list">
+                <li><span>Calories</span><span id="caloriesValue">2300 kcal</span></li>
+                <li><span>Protein</span><span id="proteinValue">85g</span></li>
+                <li><span>Iron</span><span>27mg</span></li>
+                <li><span>Calcium</span><span>1000mg</span></li>
+              </ul>
+            </div>
+
+            <div class="info-card pink">
+              <h3>Recommendations</h3>
+              <ul>
+                <li>Stay hydrated with 8-10 glasses of water daily</li>
+                <li>Include variety of fruits and vegetables</li>
+                <li>Take prenatal vitamins as prescribed</li>
+                <li>Monitor weight gain regularly</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="info-card gray">
+            <h3>Weekly Meal Plan</h3>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Day</th>
+                    <th>Meal Type</th>
+                    <th>Food</th>
+                  </tr>
+                </thead>
+                <tbody id="mealPlanTable">
+                  <!-- Meal plan will be populated by JavaScript -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="info-card blue">
+            <h3>Exercise Guidelines</h3>
+            <ul>
+              <li>30 minutes of moderate exercise most days</li>
+              <li>Walking and swimming are excellent options</li>
+              <li>Practice prenatal yoga with guidance</li>
+              <li>Listen to your body and avoid overexertion</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  
+</body>
+</html>
+<style>:root {
+    --purple-50: #faf5ff;
+    --pink-50: #fdf2f8;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --purple-600: #9333ea;
+    --purple-700: #7e22ce;
+  }
+  
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    color: var(--gray-800);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  
+  .min-h-screen {
+    min-height: 100vh;
+    background: linear-gradient(to bottom right, var(--purple-50), var(--pink-50));
+    padding: 1.5rem;
+  }
+  
+  .container {
+    max-width: 64rem;
+    margin: 0 auto;
+  }
+  
+  h1 {
+    font-size: 1.875rem;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  
+  form {
+    background: white;
+    border-radius: 1rem;
+    padding: 2rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  @media (min-width: 768px) {
+    .form-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  
+  .form-group {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .span-2 {
+    grid-column: span 2;
+  }
+  
+  label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--gray-700);
+    margin-bottom: 0.5rem;
+  }
+  
+  input,
+  select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    font-size: 1rem;
+  }
+  
+  select[multiple] {
+    height: 120px;
+  }
+  
+  input:focus,
+  select:focus {
+    outline: none;
+    border-color: var(--purple-600);
+    box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.1);
+  }
+  
+  .submit-btn {
+    width: 100%;
+    margin-top: 2rem;
+    padding: 0.75rem 1.5rem;
+    background-color: var(--purple-600);
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-size: 1rem;
+  }
+  
+  .submit-btn:hover {
+    background-color: var(--purple-700);
+  }
+  
+  .modal {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    z-index: 50;
+  }
+  
+  .modal.hidden {
+    display: none;
+  }
+  
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+  }
+  
+  .modal-container {
+    position: relative;
+    background: white;
+    border-radius: 1rem;
+    width: 100%;
+    max-width: 64rem;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    animation: modalFadeIn 0.3s ease-out;
+  }
+  
+  @keyframes modalFadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  
+  .modal-header {
+    position: sticky;
+    top: 0;
+    background: white;
+    padding: 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 1;
+  }
+  
+  .modal-header h2 {
+    font-size: 1.5rem;
+    font-weight: bold;
+  }
+  
+  .close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 0.5rem;
+    line-height: 1;
+  }
+  
+  .close-btn:hover {
+    color: var(--gray-700);
+  }
+  
+  .modal-content {
+    padding: 1.5rem;
+  }
+  
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  @media (min-width: 768px) {
+    .info-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  
+  .info-card {
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+  }
+  
+  .info-card h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+  }
+  
+  .info-card.purple {
+    background-color: var(--purple-50);
+  }
+  
+  .info-card.pink {
+    background-color: var(--pink-50);
+  }
+  
+  .info-card.gray {
+    background-color: #f9fafb;
+    margin-top: 1.5rem;
+  }
+  
+  .info-card.blue {
+    background-color: #eff6ff;
+    margin-top: 1.5rem;
+  }
+  
+  .needs-list li {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+  }
+  
+  .table-wrapper {
+    overflow-x: auto;
+    margin-top: 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+  }
+  
+  th, td {
+    padding: 0.75rem;
+    border: 1px solid #e5e7eb;
+  }
+  
+  th {
+    background-color: #f8fafc;
+    font-weight: 600;
+    color: var(--gray-700);
+    white-space: nowrap;
+  }
+  
+  td {
+    color: var(--gray-800);
+  }
+  
+  tr:nth-child(5n + 1) td:first-child {
+    font-weight: 600;
+  }
+  
+  ul {
+    list-style-type: none;
+  }
+  
+  ul li {
+    margin-bottom: 0.75rem;
+    line-height: 1.5;
+  }</style>
+  <script>document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('nutritionForm');
+    const modal = document.getElementById('resultsModal');
+    const closeBtn = modal.querySelector('.close-btn');
+    const modalOverlay = modal.querySelector('.modal-overlay');
+    const mealPlanTable = document.getElementById('mealPlanTable');
+    const caloriesValue = document.getElementById('caloriesValue');
+    const proteinValue = document.getElementById('proteinValue');
+  
+    const nutritionData = {
+      first: {
+        calories: '1800 kcal',
+        protein: '75g'
+      },
+      second: {
+        calories: '2200 kcal',
+        protein: '85g'
+      },
+      third: {
+        calories: '2400 kcal',
+        protein: '100g'
+      }
+    };
+  
+    const mealPlan = {
+      monday: [
+        { type: 'Breakfast', food: 'Ragi dosa with sambar and coconut chutney' },
+        { type: 'Morning Snack', food: 'Mixed nuts and fresh fruit (apple or pear)' },
+        { type: 'Lunch', food: 'Brown rice, dal, palak paneer, and cucumber raita' },
+        { type: 'Evening Snack', food: 'Roasted chana with lemon juice' },
+        { type: 'Dinner', food: 'Whole wheat roti, vegetable curry, and curd' }
+      ],
+      tuesday: [
+        { type: 'Breakfast', food: 'Oats upma with vegetables and a boiled egg' },
+        { type: 'Morning Snack', food: 'Buttermilk with roasted cumin seeds' },
+        { type: 'Lunch', food: 'Vegetable pulao, dal, and mixed vegetable raita' },
+        { type: 'Evening Snack', food: 'Sprouts salad with lemon dressing' },
+        { type: 'Dinner', food: 'Multigrain roti, fish curry (for non-vegetarians) or soya curry (for vegetarians)' }
+      ],
+      wednesday: [
+        { type: 'Breakfast', food: 'Idli with sambar and mint chutney' },
+        { type: 'Morning Snack', food: 'Sliced guava with chaat masala' },
+        { type: 'Lunch', food: 'Whole wheat pasta with vegetable sauce and paneer' },
+        { type: 'Evening Snack', food: 'Homemade trail mix (puffed rice, peanuts, dried fruits)' },
+        { type: 'Dinner', food: 'Chapati, mixed dal, bhindi masala, and cucumber salad' }
+      ],
+      thursday: [
+        { type: 'Breakfast', food: 'Besan cheela with mint chutney and a glass of milk' },
+        { type: 'Morning Snack', food: 'Yogurt with fresh pomegranate seeds' },
+        { type: 'Lunch', food: 'Lemon rice, rasam, vegetable kootu, and papad' },
+        { type: 'Evening Snack', food: 'Steamed corn on the cob with lemon and salt' },
+        { type: 'Dinner', food: 'Whole wheat roti, chicken curry or rajma, mixed vegetable sabzi' }
+      ],
+      friday: [
+        { type: 'Breakfast', food: 'Vegetable poha with peanuts and buttermilk' },
+        { type: 'Morning Snack', food: 'Handful of almonds and walnuts' },
+        { type: 'Lunch', food: 'Chapati, yellow dal, aloo gobi, and tomato salad' },
+        { type: 'Evening Snack', food: 'Makhana (fox nuts) roasted with ghee' },
+        { type: 'Dinner', food: 'Brown rice, sambar, avial, and curd' }
+      ],
+      saturday: [
+        { type: 'Breakfast', food: 'Whole wheat bread sandwich with paneer filling' },
+        { type: 'Morning Snack', food: 'Coconut water and a small banana' },
+        { type: 'Lunch', food: 'Vegetable biryani, raita, and mixed sprouts curry' },
+        { type: 'Evening Snack', food: 'Roasted chana dal with curry leaves' },
+        { type: 'Dinner', food: 'Chapati, masoor dal, bottle gourd sabzi, carrot salad' }
+      ],
+      sunday: [
+        { type: 'Breakfast', food: 'Methi paratha with curd and pickle' },
+        { type: 'Morning Snack', food: 'Fresh fruit salad with chaat masala' },
+        { type: 'Lunch', food: 'Chapati, kadhi, aloo matar, and beetroot poriyal' },
+        { type: 'Evening Snack', food: 'Puffed rice bhel with vegetables' },
+        { type: 'Dinner', food: 'Vegetable uttapam with coconut chutney and sambar' }
+      ]
+    };
+  
+    function populateMealPlan(diet) {
+      mealPlanTable.innerHTML = '';
+      Object.entries(mealPlan).forEach(([day, meals]) => {
+        meals.forEach((meal, index) => {
+          const row = document.createElement('tr');
+          let foodText = meal.food;
+          
+          // Adjust meal based on diet preference
+          if (diet === 'vegan') {
+            foodText = foodText
+              .replace(/milk|curd|paneer|yogurt/gi, 'soy milk')
+              .replace(/egg/gi, 'tofu scramble')
+              .replace(/fish curry|chicken curry/gi, 'chickpea curry');
+          } else if (diet === 'vegetarian') {
+            foodText = foodText
+              .replace(/fish curry|chicken curry/gi, 'paneer curry');
+          }
+  
+          if (index === 0) {
+            row.innerHTML = `
+              <td rowspan="5">${day.charAt(0).toUpperCase() + day.slice(1)}</td>
+              <td>${meal.type}</td>
+              <td>${foodText}</td>
+            `;
+          } else {
+            row.innerHTML = `
+              <td>${meal.type}</td>
+              <td>${foodText}</td>
+            `;
+          }
+          mealPlanTable.appendChild(row);
+        });
+      });
+    }
+  
+    function updateNutritionalValues(trimester) {
+      const data = nutritionData[trimester];
+      if (data) {
+        caloriesValue.textContent = data.calories;
+        proteinValue.textContent = data.protein;
+      }
+    }
+  
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const trimester = document.getElementById('trimester').value;
+      const diet = document.getElementById('diet').value;
+      
+      updateNutritionalValues(trimester);
+      populateMealPlan(diet);
+      modal.classList.remove('hidden');
+    });
+  
+    // Close modal handlers
+    function closeModal() {
+      modal.classList.add('hidden');
+    }
+  
+    closeBtn.addEventListener('click', closeModal);
+    modalOverlay.addEventListener('click', closeModal);
+  
+    // Close modal on escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+        closeModal();
+      }
+    });
+  
+    // Prevent modal close when clicking modal content
+    modal.querySelector('.modal-container').addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+  });</script>
